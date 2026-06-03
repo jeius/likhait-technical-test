@@ -18,6 +18,17 @@ categories = [
   'Other'
 ]
 
+payers = [
+  'John Doe',
+  'Jane Smith',
+  'Alice Johnson',
+  'Bob Brown',
+  'Charlie Davis',
+  'Emily Wilson',
+  'Frank Miller',
+  'Grace Lee',
+]
+
 created_categories = categories.map do |cat_name|
   Category.create!(name: cat_name)
 end
@@ -133,6 +144,9 @@ while current_date <= end_date
     if templates
       # Pick a random template
       template = templates.sample
+      
+      # Pick a random payer
+      payer_name = payers.sample
 
       # Generate random amount within the range
       amount = rand(template[:amount_range]).round(2)
@@ -146,6 +160,7 @@ while current_date <= end_date
         amount: amount,
         category: category,
         date: current_date,
+        payer_name: payer_name,
         created_at: current_date,
         updated_at: current_date
       )
