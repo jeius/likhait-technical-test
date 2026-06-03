@@ -17,6 +17,7 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
     description: initialData?.description || "",
     category: initialData?.category || "",
     date: initialData?.date || formatDate(new Date()),
+    payerName: initialData?.payerName || "",
   });
 
   const [errors, setErrors] = useState<Partial<ExpenseFormData>>({});
@@ -49,6 +50,10 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
       newErrors.date = "Date is required";
     }
 
+    if (!formData.payerName.trim()) {
+      newErrors.payerName = "Payer name is required";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -69,6 +74,7 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
         description: "",
         category: "",
         date: formatDate(new Date()),
+        payerName: "",
       });
       setErrors({});
     } catch (error) {
@@ -84,6 +90,7 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
       description: initialData?.description || "",
       category: initialData?.category || "",
       date: initialData?.date || formatDate(new Date()),
+      payerName: initialData?.payerName || "",
     });
     setErrors({});
   };
