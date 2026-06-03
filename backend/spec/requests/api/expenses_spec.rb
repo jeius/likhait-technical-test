@@ -16,6 +16,14 @@ RSpec.describe "Api::Expenses", type: :request do
       json = JSON.parse(response.body)
       expect(json.map { |e| e["id"] }).to include(expense1.id, expense2.id)
     end
+
+    it "returns expenses in descending order by date" do
+      get api_url
+
+      json = JSON.parse(response.body)
+      dates = json.map { |e| Date.parse(e["date"]) }
+      expect(dates).to eq(dates.sort.reverse)
+    end
   end
 
   describe "POST /api/expenses" do
