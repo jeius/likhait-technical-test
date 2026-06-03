@@ -26,7 +26,7 @@ payers = [
   'Charlie Davis',
   'Emily Wilson',
   'Frank Miller',
-  'Grace Lee',
+  'Grace Lee'
 ]
 
 created_categories = categories.map do |cat_name|
@@ -144,7 +144,7 @@ while current_date <= end_date
     if templates
       # Pick a random template
       template = templates.sample
-      
+
       # Pick a random payer
       payer_name = payers.sample
 
