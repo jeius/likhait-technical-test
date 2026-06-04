@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { getExpenses, createExpense } from "../services/api";
-import { Expense, ExpenseFormData } from "../types";
+import { getExpenses, createExpense, fetchCategories, createCategory } from "../services/api";
+import { Category, Expense, ExpenseFormData } from "../types";
 import YearNavigation from "../components/YearNavigation";
 import { MonthNavigation } from "../components/MonthNavigation";
 import CategoryBreakdown from "../components/CategoryBreakdown";
 import { CalendarExpenseTable } from "../components/CalendarExpenseTable";
 import { ExpenseForm } from "../components/ExpenseForm";
-import { Modal, Button } from "../vibes";
+import { Modal, Button, TextField } from "../vibes";
 import { COLORS } from "../constants/colors";
 
 const HistoryPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [apiCategories, setApiCategories] = useState<Category[]>([]);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   // Get year and month from URL params, default to current date if not provided
   const getInitialYearMonth = () => {
@@ -40,14 +45,16 @@ const HistoryPage: React.FC = () => {
     window.history.pushState({}, "", newURL);
   };
 
-  // Initialize URL params if not present
-  useEffect(() => {
-    updateURL(selectedYear, selectedMonth);
-  }, []);
 
-  useEffect(() => {
-    fetchExpenses();
-  }, [selectedYear, selectedMonth]);
+
+  const loadCategories = async () => {
+    try {
+      const data = await fetchCategories();
+      setApiCategories(data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
 
   const fetchExpenses = async () => {
     try {
@@ -79,6 +86,28 @@ const HistoryPage: React.FC = () => {
     } catch (error) {
       console.error("Error creating expense:", error);
       throw error;
+    }
+  };
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) {
+      setCategoryError("Category name is required");
+      return;
+    }
+    setIsSavingCategory(true);
+    setCategoryError("");
+    try {
+      await createCategory(newCategoryName.trim());
+      await loadCategories();
+      setNewCategoryName("");
+      setIsCategoryModalOpen(false);
+    } catch (error) {
+      setCategoryError(
+        error instanceof Error ? error.message : "Failed to create category",
+      );
+    } finally {
+      setIsSavingCategory(false);
     }
   };
 
@@ -138,6 +167,26 @@ const HistoryPage: React.FC = () => {
     color: COLORS.secondary.s08,
   };
 
+  const actionContainerStyle: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: "1rem",
+  }
+
+    // Initialize URL params if not present
+  useEffect(() => {
+    updateURL(selectedYear, selectedMonth);
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [selectedYear, selectedMonth]);
+
   return (
     <div style={pageStyle}>
       <div style={headerStyle}>
@@ -148,9 +197,14 @@ const HistoryPage: React.FC = () => {
             onYearChange={handleYearChange}
           />
         </div>
-        <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+        <div style={actionContainerStyle}>
+          <Button variant="primary" onClick={() => setIsModalOpen(true)}>
           Add Expense
-        </Button>
+          </Button>
+          <Button variant="secondary" onClick={() => { setNewCategoryName(""); setCategoryError(""); setIsCategoryModalOpen(true); }}>
+            Add Category
+          </Button>
+        </div>
       </div>
 
       <MonthNavigation
@@ -171,6 +225,7 @@ const HistoryPage: React.FC = () => {
             />
             <div style={{ marginTop: "32px" }}>
               <CalendarExpenseTable
+                categories={apiCategories.length > 0 ? apiCategories : undefined}
                 expenses={expenses}
                 onExpenseUpdated={fetchExpenses}
               />
@@ -187,7 +242,35 @@ const HistoryPage: React.FC = () => {
         <ExpenseForm
           onSubmit={handleAddExpense}
           onCancel={() => setIsModalOpen(false)}
+          categories={apiCategories.length > 0 ? apiCategories : undefined}
         />
+      </Modal>
+
+      <Modal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        title="Add New Category"
+      >
+        <form onSubmit={handleAddCategory} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <TextField
+            label="Category Name"
+            type="text"
+            placeholder="e.g. Subscriptions"
+            value={newCategoryName}
+            onChange={(e) => { setNewCategoryName(e.target.value); setCategoryError(""); }}
+            error={categoryError || undefined}
+            fullWidth
+            required
+          />
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+            <Button type="submit" variant="primary" disabled={isSavingCategory} fullWidth>
+              {isSavingCategory ? "Saving..." : "Create Category"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setIsCategoryModalOpen(false)} disabled={isSavingCategory}>
+              Cancel
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
